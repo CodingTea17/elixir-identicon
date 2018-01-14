@@ -5,31 +5,54 @@ defmodule Identicon do
     |> pick_color
     |> build_grid
     |> filter_odd_squares
+    |> build_pixel_map
+    |> draw_image
+    |> save_image(input)
+  end
+
+  def save_image(image, input) do
+    File.write("#{input}.png", image)
+  end
+
+  def draw_image(%Identicon.Image{ color: color, pixel_map: pixel_map }) do
+    image = :egd.create(250, 250)
+    fill = :egd.color(color)
+
+    Enum.each pixel_map, fn({ start, stop }) ->
+      :egd.filledRectangle(image, start, stop, fill)
+    end
+
+    :egd.render(image)
   end
 
   def build_pixel_map(%Identicon.Image{ grid: grid } = image) do
-    Enum.map grid, fn({ _code, index }) ->
-      horizon = rem(index, 5) * 50
-      vert = div(index, 5) * 50
+    pixel_map =
+      Enum.map grid, fn({ _code, index }) ->
+        horiz = rem(index, 5) * 50
+        vert = div(index, 5) * 50
 
-      top_left = { horizon, vert }
-      bottom_right = { horizon + 50, vert + 50 }
-      { top_left, bottom_right }
-    end
+        top_left = { horiz, vert }
+        bottom_right = { horiz + 50, vert + 50 }
+
+        { top_left, bottom_right }
+      end
+
+    %Identicon.Image{ image | pixel_map: pixel_map }
   end
   
   def filter_odd_squares(%Identicon.Image{ grid: grid} = image) do
-    Enum.filter grid, fn({ code, _index }) -> 
-      rem(code, 2) == 0
-    end
+    grid =
+      Enum.filter grid, fn({ code, _index }) -> 
+        rem(code, 2) == 0
+      end
 
     %Identicon.Image{ image | grid: grid }
   end
 
   # Pattern match r, g, b from image as it is recieved as input to the method. Weird. 
   def pick_color(%Identicon.Image{ hex:  [r, g, b | _tail ] } = image) do
-    # REBUILD THE STRUCT AND ADD A TUPLE OF COLORS (R, G, B)
-    %Identicon.Image{ image | colors: { r, g, b } }
+    # REBUILD THE STRUCT AND ADD A TUPLE OF COLOR (R, G, B)
+    %Identicon.Image{ image | color: { r, g, b } }
   end
 
   def hash_input(input) do
