@@ -6,6 +6,17 @@ defmodule Identicon do
     |> build_grid
     |> filter_odd_squares
   end
+
+  def build_pixel_map(%Identicon.Image{ grid: grid } = image) do
+    Enum.map grid, fn({ _code, index }) ->
+      horizon = rem(index, 5) * 50
+      vert = div(index, 5) * 50
+
+      top_left = { horizon, vert }
+      bottom_right = { horizon + 50, vert + 50 }
+      { top_left, bottom_right }
+    end
+  end
   
   def filter_odd_squares(%Identicon.Image{ grid: grid} = image) do
     Enum.filter grid, fn({ code, _index }) -> 
